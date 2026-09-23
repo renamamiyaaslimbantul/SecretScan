@@ -58,7 +58,14 @@ func TestStagedContentReadsIndexNotWorkingTree(t *testing.T) {
 	write(t, path, "staged-value")
 	run(t, repo, "git", "add", "config.txt")
 	write(t, path, "working-value")
-	got, err := StagedContent(repo, path)
+	files, err := StagedFiles(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("staged files = %#v", files)
+	}
+	got, err := StagedContent(repo, files[0])
 	if err != nil {
 		t.Fatal(err)
 	}
