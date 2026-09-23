@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -63,6 +64,21 @@ func TestStagedContentReadsIndexNotWorkingTree(t *testing.T) {
 	}
 	if string(got) != "staged-value" {
 		t.Fatalf("content = %q", got)
+	}
+}
+
+func TestRelativeRepositoryPathIgnoresWindowsPathCase(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows path semantics")
+	}
+	root := filepath.Join(t.TempDir(), "Repo")
+	path := filepath.Join(root, "src", "config.txt")
+	rel, err := relativeRepositoryPath(strings.ToUpper(root), strings.ToLower(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel != filepath.Join("src", "config.txt") {
+		t.Fatalf("relative path = %q", rel)
 	}
 }
 

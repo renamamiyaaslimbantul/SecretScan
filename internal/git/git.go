@@ -48,8 +48,8 @@ func StagedContent(dir, absolutePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	rel, err := filepath.Rel(root, absolutePath)
-	if err != nil || strings.HasPrefix(rel, "..") {
+	rel, err := relativeRepositoryPath(root, absolutePath)
+	if err != nil {
 		return nil, errors.New("staged file is outside repository")
 	}
 	gitPath := filepath.ToSlash(rel)
@@ -60,6 +60,30 @@ func StagedContent(dir, absolutePath string) ([]byte, error) {
 		return nil, fmt.Errorf("read staged file %q: %w", gitPath, err)
 	}
 	return out, nil
+}
+
+func relativeRepositoryPath(root, path string) (string, error) {
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(root, path)
+	if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return rel, nil
+	}
+	// Windows paths are case-insensitive. Git may normalize the drive or
+	// directory casing differently from os.TempDir and filepath.Abs.
+	if filepath.VolumeName(root) != "" && strings.EqualFold(filepath.VolumeName(root), filepath.VolumeName(path)) {
+		rel, err = filepath.Rel(strings.ToLower(root), strings.ToLower(path))
+		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return rel, nil
+		}
+	}
+	return "", errors.New("path is outside repository")
 }
 
 func InstallHook(dir, executable string) (string, error) {
