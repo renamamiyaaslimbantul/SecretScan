@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build executable
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          go build -trimpath -ldflags "-s -w -X github.com/renamamiyaaslimbantul/SecretScan/internal/app.Version=$version" -o secretscan.exe .\cmd\secretscan
+          (Get-FileHash .\secretscan.exe -Algorithm SHA256).Hash.ToLower() + '  secretscan.exe' | Set-Content SHA256SUMS
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME .\secretscan.exe .\SHA256SUMS --generate-notes --verify-tag

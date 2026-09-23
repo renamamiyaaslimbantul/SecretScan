@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        shell: pwsh
+        run: |
+          $diff = gofmt -d .\cmd .\internal
+          if ($diff) { $diff; exit 1 }
+
+      - name: Test with race detector
+        run: go test -race ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build -trimpath -o secretscan.exe .\cmd\secretscan
+
+      - name: Scan repository
+        shell: pwsh
+        run: |
+          .\secretscan.exe . --output json | Tee-Object -FilePath scan.json
+          if ($LASTEXITCODE -eq 1) { Write-Error 'SecretScan found a repository credential'; exit 1 }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

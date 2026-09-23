@@ -1,0 +1,3 @@
+# Synthetic, invalid credentials for tests and demonstrations only.
+api_key="z9Qp2Lm7Vx4Nc8Rt6Hs1Wd3K"
+password="B7!mQ2#vL9@xT4"

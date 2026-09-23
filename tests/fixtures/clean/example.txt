@@ -1,0 +1,4 @@
+API_KEY="YOUR_API_KEY_HERE"
+access_token="example-token"
+password="test-password"
+token="<your-token>"
